@@ -16,6 +16,16 @@ import random
 import speech_recognition as sr
 from streamlit_star_rating import st_star_rating
 from audio_recorder_streamlit import audio_recorder
+from gtts import gTTS
+from IPython.display import Audio
+
+
+def question_audio(txt):
+    tts = gTTS(txt, lang='en',tld = "co.in")
+    prompt_response_speech = "question.mp3"
+    tts.save(prompt_response_speech)
+    audio = Audio(prompt_response_speech, autoplay=True)
+    st.write(audio)
 
 st.set_page_config(
     page_title="Hello",
@@ -31,6 +41,7 @@ if 'QB_name' not in st.session_state:
     st.session_state.QB_name = ''
 
 player_email = st.text_input("Agent Email")
+player_email = 'nilesh.ahirwar@squadstack.com'
 
 key_col1, key_col2, key_col3 = st.columns(3)
 
@@ -189,6 +200,7 @@ if 'answers' not in st.session_state :
 if 'old_rec' not in st.session_state:
     st.session_state.old_rec = ''
 
+info_placeholder = st.empty()
 q_placeholder = st.empty()
 a_placeholder = st.empty()
 speak_placeholder = st.empty()
@@ -196,8 +208,10 @@ speak_placeholder = st.empty()
 if 'idx' not in st.session_state:
     st.session_state.idx = 0
 
+
 st.session_state.audio_data = audio_recorder(energy_threshold=100, pause_threshold=100,icon_name='phone',icon_size='1x',key = 1)
 q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
+question_audio(st.session_state.questions[st.session_state.idx])
 
 
 if st.session_state.audio_data and str(st.session_state.audio_data)!= st.session_state.old_rec:
@@ -214,10 +228,11 @@ if st.session_state.audio_data and str(st.session_state.audio_data)!= st.session
         except sr.UnknownValueError:
             transcription = "Unable to transcribe audio."
     st.write(transcription)
-    if st.session_state.idx < len(st.session_state.questions):
-        ele = st.session_state.questions[st.session_state.idx]
-        q_placeholder.text('Current Question: '+ele)
-        st.session_state.answers[ele] = {'Your answer':transcription,"Ideal Answser":df.iloc[st.session_state.idx,1]}    
+    # if st.session_state.idx < len(st.session_state.questions):
+    ele = st.session_state.questions[st.session_state.idx]
+    
+    q_placeholder.text('Current Question: '+ele)
+    st.session_state.answers[ele] = {'Your answer':transcription,"Ideal Answser":df.iloc[st.session_state.idx,1]}    
     st.session_state.old_rec = str(st.session_state.audio_data)
 
 
@@ -232,35 +247,39 @@ if st.session_state.idx < len(st.session_state.questions):
 if 'btn_txt' not in st.session_state:
     st.session_state.btn_txt = 'Next'
 
-if st.session_state.idx >= (len(st.session_state.questions)-1):
-    st.session_state.btn_txt = 'Submit'
-
-
 if 'submit_pressed' not in st.session_state:
     st.session_state.submit_pressed = False
 
-if st.button(st.session_state.btn_txt):
+info_placeholder.text('Question No. '+str((st.session_state.idx)+1)+' out of '+str(len(df)))
+
+next_btn_state = False
+submit_btn_state = False
+
+if ((st.session_state.idx)+1) >= len(df):
+    st.session_state.stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=st.session_state.stars)
+    st.session_state.btn_txt = 'Submit'
+    next_btn_state = True
+elif ((st.session_state.idx)+1) < len(df):
+    st.session_state.btn_txt = 'Next'
+    submit_btn_state = True
+
+if st.button("Next",disabled=next_btn_state):
     if st.session_state.idx < (len(st.session_state.questions)-1):
         st.session_state.idx+=1
+    info_placeholder.text('Question No. '+str((st.session_state.idx)+1)+' out of '+str(len(df)))
     q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
+    
+if st.button("Submit",disabled=submit_btn_state):
+    st.session_state.submit_pressed = True
+    id = rn()
+    for i in st.session_state.answers:
+        q = i
+        a = st.session_state.answers[i]
+        s = st.session_state.stars
+        st.write(q,a,s,id,player_email,st.session_state.QB_name,st.session_state.stars)
+        # answer_df = pd.DataFrame({'QB_NAME': [QB_name], 'Question': [st.session_state.questions], 'Answer': [st.session_state.answers],'Ratings':[stars],"Email":[player_email]})
+        # google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8','Answers!A:E','append',answer_df,False)
 
-    if st.session_state.idx > (len(st.session_state.questions)-1):
-        if not st.session_state.submit_pressed:
-            id = rn()
-            for i in st.session_state.answers:
-                q = i
-                a = st.session_state.answers[i]
-                s = st.session_state.stars
-                
-
-                st.write(q,a,s,id,player_email,st.session_state.QB_name)
-            st.session_state.submit_pressed = True
-
-        elif st.session_state.submit_pressed:
-            st.cache_resource.clear()
-            
-if st.session_state.idx > (len(st.session_state.questions)-1):
-    st.session_state.stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=st.session_state.stars)
-
-st.write("Here are your answers:")
-st.write(st.session_state.answers)
+if not st.session_state.submit_pressed:
+    st.write("Here are your answers:")
+    st.write(st.session_state.answers)
