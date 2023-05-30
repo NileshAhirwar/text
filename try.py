@@ -35,11 +35,9 @@ st.write("❤️Welocom To Trainee Panel!❤️")
 
 
 player_email = st.text_input("Agent Email")
-player_email = 'nilesh.ahirwar@squadstack.com'
 key_col1, key_col2, key_col3 = st.columns(3)
 with key_col1:
     QB_name = st.text_input("QB Name")
-    # QB_name = 'Bajaj 1'
 with key_col2:
     token_businessbot = st.text_input("KEY2")
 with key_col3:
