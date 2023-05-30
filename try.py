@@ -16,7 +16,7 @@ import random
 import speech_recognition as sr
 from streamlit_star_rating import st_star_rating
 from audio_recorder_streamlit import audio_recorder
-import pyautogui
+# import pyautogui
 
 st.set_page_config(
     page_title="Hello",
@@ -304,7 +304,8 @@ if st.button(st.session_state.btn_txt):
             st.session_state.submit_pressed = True
 
         elif st.session_state.submit_pressed:
-            pyautogui.hotkey("ctrl","F5")
+            pass
+#             pyautogui.hotkey("ctrl","F5")
             #     player_email
             #     QB_name
 
