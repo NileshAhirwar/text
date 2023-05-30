@@ -16,7 +16,6 @@ import random
 import speech_recognition as sr
 from streamlit_star_rating import st_star_rating
 from audio_recorder_streamlit import audio_recorder
-# import pyautogui
 
 st.set_page_config(
     page_title="Hello",
@@ -25,24 +24,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 
 )
+st.success("❤️Welocom To Trainee Panel!❤️")
 
-# try:
-#     st.success("welcome to streamlit community!")
-# except:
-#    pyautogui.hotkey("ctrl","F5")
 
-st.write("❤️Welocom To Trainee Panel!❤️")
-
+if 'QB_name' not in st.session_state:
+    st.session_state.QB_name = ''
 
 player_email = st.text_input("Agent Email")
+
 key_col1, key_col2, key_col3 = st.columns(3)
-with key_col1:
-    QB_name = st.text_input("QB Name")
+
 with key_col2:
     token_businessbot = st.text_input("KEY2")
 with key_col3:
     creds_businessbot = st.text_input("KEY3")
-
 
 
 @st.cache_data
@@ -96,6 +91,13 @@ def google_sheet_action_sub(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns
         result = service.spreadsheets().values().clear(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME, body=body).execute()
         return result
 
+    elif action == 'sheet_name':
+        # Check if the sheet exists
+        service = build('sheets', 'v4', credentials=creds)
+        sheet_metadata = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
+        sheet_titles = [sheet['properties']['title'] for sheet in sheet_metadata['sheets'] if sheet['properties']['title'] != 'Answers']
+        return sheet_titles
+    
     elif action == 'write':
         # Check if the sheet exists
         service = build('sheets', 'v4', credentials=creds)
@@ -105,15 +107,7 @@ def google_sheet_action_sub(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns
         sheet_name = RANGE_NAME.split('!')[0]
         if sheet_name not in sheet_titles:
             # Create the sheet if it doesn't exist
-            requests = [
-                {
-                    'addSheet': {
-                        'properties': {
-                            'title': sheet_name
-                        }
-                    }
-                }
-            ]
+            requests = [ { 'addSheet': { 'properties': { 'title': sheet_name } } } ]
             service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body={'requests': requests}).execute()
         if columns:
             row_df = pd.DataFrame([pd.Series([str(i) for i in df.columns])])
@@ -145,14 +139,8 @@ def google_sheet_action_sub(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns
         print("Incorrect action. Must be read|write|append|clear.")
         return 0
 
-# def google_sheet_action(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns=False):
-#     retry = 0
-#     while retry < 5:
-#         df = google_sheet_action_sub(SPREADSHEET_ID, RANGE_NAME, action, df, columns)
-#         if df == 0:
-#             return pd.DataFrame()
-#         return google_sheet_action_sub(SPREADSHEET_ID, RANGE_NAME, action, df, columns)
 
+@st.cache_data
 def google_sheet_action(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns=False):
     retry = 0
     while retry < 5:
@@ -169,80 +157,54 @@ def google_sheet_action(SPREADSHEET_ID, RANGE_NAME, action, df=None, columns=Fal
 @st.cache_data
 def get_df(QB_name):
     try:
-        return google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8',QB_name+'!A:C','read',columns=True)
+        return google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8',st.session_state.QB_name+'!A:C','read',columns=True)
     except Exception as e:
         st.write(e)
         return pd.DataFrame()
     
 
+sheet_name = google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8',st.session_state.QB_name+'!A:C','sheet_name',columns=True)
 
-df = get_df(QB_name)
-# df = st.experimental_data_editor(df, use_container_width=True, num_rows="dynamic")
+def reset():
+    for key in st.session_state.keys():
+        del st.session_state[key]
 
-# Generate a random integer between 1 and 10
-def get_random_question_number():
-    return random.randint(0, len(df)-1)
+with key_col1:
+    st.session_state.QB_name = st.selectbox("QB Name",sheet_name,on_change=reset)
 
+df = get_df(st.session_state.QB_name)
 
 def rn():
-    return random.randint(0, 99999999999999999999999999999999999999999999999999999999999999999)
+    return random.randint(0, 9999999999999999999999999999999)
 
-# A list of questions to ask
 if 'questions' not in st.session_state:
     st.session_state.questions = list(df['Questions'])
 
-if 'answers' not in st.session_state:
+if 'answers' not in st.session_state :
     st.session_state.answers = {}
 
+
+# st.write(df[].to_dict())
+
+if 'old_rec' not in st.session_state:
+    st.session_state.old_rec = ''
 
 q_placeholder = st.empty()
 a_placeholder = st.empty()
 speak_placeholder = st.empty()
 
-# A function to transcribe audio from the microphone
-def transcribe_audio(attempts=0):
-    try:
-        if attempts >= 1:
-            # st.write("Exceeded maximum number of attempts.")
-            speak_placeholder.text("Exceeded maximum number of attempts.")
-            return None
-
-        r = sr.Recognizer()
-        with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source)
-            speak_placeholder.text('Speak now...')
-            # st.write("Speak now...")
-            audio = r.listen(source)
-            speak_placeholder.text('Transcribing')
-            # st.write("Transcribing...")
-            text = r.recognize_google(audio)
-            speak_placeholder.text('Transcription'+text)
-            # st.write("Transcription:", text)
-            return text
-    except sr.UnknownValueError:
-        speak_placeholder.text('Could not understand audio. Please try again')
-        # st.write("Could not understand audio. Please try again.")
-        return transcribe_audio(attempts + 1)
-    except sr.RequestError:
-        speak_placeholder.text('Speech recognition service unavailable. Please try again later.')
-        # st.write("Speech recognition service unavailable. Please try again later.")
-        return transcribe_audio(attempts + 1)
-    
-# A loop to ask the questions one by one and store the answers
-
-# Display the final results
 if 'idx' not in st.session_state:
     st.session_state.idx = 0
 
-audio_data = audio_recorder(energy_threshold=100, pause_threshold=100,icon_name='phone',icon_size='1x')
+st.session_state.audio_data = audio_recorder(energy_threshold=100, pause_threshold=100,icon_name='phone',icon_size='1x',key = 1)
+q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
 
-# q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
 
-
-if audio_data:
+if st.session_state.audio_data and str(st.session_state.audio_data)!= st.session_state.old_rec:
     audio_file_path = "temp_audio.wav"
     with open(audio_file_path, "wb") as f:
-        f.write(audio_data)
+        f.write(st.session_state.audio_data)
+
     st.audio(audio_file_path, format="audio/wav")
     r = sr.Recognizer()
     with sr.AudioFile(audio_file_path) as source:
@@ -251,19 +213,12 @@ if audio_data:
             transcription = r.recognize_google(audio)
         except sr.UnknownValueError:
             transcription = "Unable to transcribe audio."
-
     st.write(transcription)
-
     if st.session_state.idx < len(st.session_state.questions):
-    # for q in st.session_state.questions:
         ele = st.session_state.questions[st.session_state.idx]
         q_placeholder.text('Current Question: '+ele)
-        # a = transcribe_audio()
-        st.session_state.answers[ele] = transcription
-        # st.session_state.idx+=1
-        # stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=0,key = rn())
-
-
+        st.session_state.answers[ele] = {'Your answer':transcription,"Ideal Answser":df.iloc[st.session_state.idx,1]}    
+    st.session_state.old_rec = str(st.session_state.audio_data)
 
 
 if 'stars' not in st.session_state:
@@ -289,7 +244,7 @@ if st.button(st.session_state.btn_txt):
         st.session_state.idx+=1
     q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
 
-    if st.session_state.idx >= (len(st.session_state.questions)-1):
+    if st.session_state.idx > (len(st.session_state.questions)-1):
         if not st.session_state.submit_pressed:
             id = rn()
             for i in st.session_state.answers:
@@ -298,24 +253,13 @@ if st.button(st.session_state.btn_txt):
                 s = st.session_state.stars
                 
 
-                st.write(q,a,s,id,player_email,QB_name)
+                st.write(q,a,s,id,player_email,st.session_state.QB_name)
             st.session_state.submit_pressed = True
 
         elif st.session_state.submit_pressed:
-            pass
-#             pyautogui.hotkey("ctrl","F5")
-            #     player_email
-            #     QB_name
-
-        # answer_df = pd.DataFrame({'QB_NAME': [QB_name], 'Question': [st.session_state.questions], 'Answer': [st.session_state.answers],'Ratings':[stars],"Email":[player_email]})
-        # google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8','Answers!A:E','append',answer_df,False)
-
-
-    pass
-
-
-
-if st.session_state.idx >= (len(st.session_state.questions)-1):
+            st.cache_resource.clear()
+            
+if st.session_state.idx > (len(st.session_state.questions)-1):
     st.session_state.stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=st.session_state.stars)
 
 st.write("Here are your answers:")
