@@ -6,7 +6,7 @@ google-auth-oauthlib
 google-api-python-client
 google-api-core
 google-auth-httplib2
-speechrecognition
+SpeechRecognition
 streamlit-star-rating
 audio-recorder-streamlit
 pyautogui
