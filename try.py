@@ -25,7 +25,7 @@ def question_audio(txt):
     prompt_response_speech = "question.mp3"
     tts.save(prompt_response_speech)
     audio = Audio(prompt_response_speech, autoplay=True)
-    st.write(audio)
+    return (audio)
 
 st.set_page_config(
     page_title="Hello",
@@ -41,7 +41,6 @@ if 'QB_name' not in st.session_state:
     st.session_state.QB_name = ''
 
 player_email = st.text_input("Agent Email")
-player_email = 'nilesh.ahirwar@squadstack.com'
 
 key_col1, key_col2, key_col3 = st.columns(3)
 
@@ -204,14 +203,13 @@ info_placeholder = st.empty()
 q_placeholder = st.empty()
 a_placeholder = st.empty()
 speak_placeholder = st.empty()
-
+question_audio_placeholder = st.empty()
 if 'idx' not in st.session_state:
     st.session_state.idx = 0
 
 
 st.session_state.audio_data = audio_recorder(energy_threshold=100, pause_threshold=100,icon_name='phone',icon_size='1x',key = 1)
 q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
-question_audio(st.session_state.questions[st.session_state.idx])
 
 
 if st.session_state.audio_data and str(st.session_state.audio_data)!= st.session_state.old_rec:
@@ -257,6 +255,7 @@ submit_btn_state = False
 
 if ((st.session_state.idx)+1) >= len(df):
     st.session_state.stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=st.session_state.stars)
+    st.session_state.feedback = st.text_input('Feedback (optional)')
     st.session_state.btn_txt = 'Submit'
     next_btn_state = True
 elif ((st.session_state.idx)+1) < len(df):
@@ -264,21 +263,32 @@ elif ((st.session_state.idx)+1) < len(df):
     submit_btn_state = True
 
 if st.button("Next",disabled=next_btn_state):
+    question_audio_placeholder.text = ''
     if st.session_state.idx < (len(st.session_state.questions)-1):
         st.session_state.idx+=1
     info_placeholder.text('Question No. '+str((st.session_state.idx)+1)+' out of '+str(len(df)))
     q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
+    with question_audio_placeholder.container():
+        st.write(question_audio(st.session_state.questions[st.session_state.idx]))
+    # st.write(rn())
     
 if st.button("Submit",disabled=submit_btn_state):
     st.session_state.submit_pressed = True
     id = rn()
+    temp_dfs = []
+    main_df = pd.DataFrame()
     for i in st.session_state.answers:
         q = i
-        a = st.session_state.answers[i]
+        a = st.session_state.answers[i]['Your answer']
+        ia = st.session_state.answers[i]['Ideal Answser']
         s = st.session_state.stars
-        st.write(q,a,s,id,player_email,st.session_state.QB_name,st.session_state.stars)
+        f = st.session_state.feedback
+        st.write(q,a,s,id,player_email,st.session_state.QB_name)
+        answer_df = pd.DataFrame({'ID':[str(id)],'QB':[str(st.session_state.QB_name)],'Email':[str(player_email)],'Question':[str(q)],'Answer':[str(a)],'Ideal Answer':[str(ia)],'Stars':[str(s)],'Feedback':[str(f)]})
+        temp_dfs.append(answer_df)
         # answer_df = pd.DataFrame({'QB_NAME': [QB_name], 'Question': [st.session_state.questions], 'Answer': [st.session_state.answers],'Ratings':[stars],"Email":[player_email]})
-        # google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8','Answers!A:E','append',answer_df,False)
+    main_df = pd.concat(temp_dfs, axis=0).fillna('0')
+    google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8','Answers!A:G','append',main_df,False)
 
 if not st.session_state.submit_pressed:
     st.write("Here are your answers:")
