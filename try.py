@@ -289,8 +289,9 @@ if st.button("Submit",disabled=submit_btn_state):
         # answer_df = pd.DataFrame({'QB_NAME': [QB_name], 'Question': [st.session_state.questions], 'Answer': [st.session_state.answers],'Ratings':[stars],"Email":[player_email]})
     main_df = pd.concat(temp_dfs, axis=0).fillna('0')
     google_sheet_action('1C0i6OaBYxdf-6jhlWTsMHk4FSkEd_oGEKzUJ63mvBj8','Answers!A:G','append',main_df,False)
-    reset()
 
 if not st.session_state.submit_pressed:
     st.write("Here are your answers:")
     st.write(st.session_state.answers)
+else:
+    reset()
