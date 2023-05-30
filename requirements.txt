@@ -1,3 +1,4 @@
+IPython
 streamlit
 pandas
 openai
