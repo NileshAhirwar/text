@@ -12,3 +12,4 @@ st-star-rating
 audio-recorder-streamlit
 pyautogui
 gtts
+email-validator
