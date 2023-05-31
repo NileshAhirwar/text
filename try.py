@@ -29,12 +29,12 @@ def question_audio(txt):
 
 st.set_page_config(
     page_title="Hello",
-    page_icon="❤️",
+    page_icon="https://www.squadstack.com/",
     layout="wide",
     initial_sidebar_state="collapsed"
 
 )
-st.success("❤️Welocom To Trainee Panel!❤️")
+st.title("Welocom To Trainee Panel!")
 
 
 if 'QB_name' not in st.session_state:
@@ -238,7 +238,6 @@ if 'stars' not in st.session_state:
     st.session_state.stars = 0
 
 
-# if audio_bytes:
 if st.session_state.idx < len(st.session_state.questions):
     q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
 
@@ -274,6 +273,7 @@ if not next_btn_state:
         # st.write(rn())
     
 if not submit_btn_state:
+    st.success("That's it, please share your feedback above. To attempted a new QB just select and different QB from QB dropdown. and to reattempt, refresh the page.")
     if st.button("Submit",disabled=submit_btn_state):
         st.session_state.submit_pressed = True
         id = rn()
