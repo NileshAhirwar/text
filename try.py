@@ -23,8 +23,8 @@ import assemblyai as aai
 from email_validator import validate_email, EmailNotValidError
 
 def transcribe():
-    a = '8cdbf17923c848'
-    b = 'e0ad5b22fc9ad7ceec'
+    a = "8cdbf17923c848e0"
+    b = "ad5b22fc9ad7ceec"
     aai.settings.api_key = a+b
     transcriber = aai.Transcriber()
     transcript = transcriber.transcribe("temp_audio.wav")
@@ -228,6 +228,9 @@ def psude():
 if 'old_rec' not in st.session_state:
     st.session_state.old_rec = ''
 
+if 'first_question_player' not in st.session_state:
+    st.session_state.first_question_player = False
+
 if 'Start' not in st.session_state:
     st.session_state.Start = False
 
@@ -253,8 +256,6 @@ if st.session_state.Start:
     if 'idx' not in st.session_state:
         st.session_state.idx = 0
 
-
-
     next_btn_state = False
     submit_btn_state = False
 
@@ -262,9 +263,10 @@ if st.session_state.Start:
 
 
     if ((st.session_state.idx)+1) >= len(st.session_state.questions):
-        st.write(st.session_state.answers)
-        st.session_state.stars = st_star_rating("Rate your response againest ideal Answer", maxValue=5, defaultValue=st.session_state.stars)
-        st.session_state.feedback = st.text_input('Feedback (optional)')
+        # st.write(st.session_state.answers)
+        st.table(pd.DataFrame(st.session_state.answers).T)
+        st.session_state.stars = st_star_rating("How do you think you did?", maxValue=5, defaultValue=st.session_state.stars)
+        st.session_state.feedback = st.text_input('Pause. Note down the things you can improve for each of the above questions next time.')
         st.session_state.btn_txt = 'Submit'
         next_btn_state = True
     elif ((st.session_state.idx)+1) < len(st.session_state.questions):
@@ -279,6 +281,7 @@ if st.session_state.Start:
         q_placeholder.text('')
         info_placeholder.text('')
     st.caption('Click the mic to start/stop recording. You can record any number of times, give your best effort!')
+    
     if st.session_state.audio_data and str(st.session_state.audio_data)!= st.session_state.old_rec:
         audio_file_path = "temp_audio.wav"
         with open(audio_file_path, "wb") as f:
@@ -286,14 +289,14 @@ if st.session_state.Start:
         
         transcription = transcribe()
         
-        # st.audio(audio_file_path, format="audio/wav")
-        # r = sr.Recognizer()
-        # with sr.AudioFile(audio_file_path) as source:
-        #     audio = r.record(source)
-        #     try:
-        #         transcription = r.recognize_google(audio)
-        #     except sr.UnknownValueError:
-        #         transcription = "Unable to transcribe audio."
+#         st.audio(audio_file_path, format="audio/wav")
+#         r = sr.Recognizer()
+#         with sr.AudioFile(audio_file_path) as source:
+#             audio = r.record(source)
+#             try:
+#                 transcription = r.recognize_google(audio)
+#             except sr.UnknownValueError:
+#                 transcription = "Unable to transcribe audio."
         st.write(transcription)
         # if st.session_state.idx < len(st.session_state.questions):
         ele = st.session_state.questions[st.session_state.idx]
@@ -326,11 +329,15 @@ if st.session_state.Start:
             q_placeholder.text('Current Question: '+st.session_state.questions[st.session_state.idx])
             with question_audio_placeholder.container():
                 st.write(question_audio(st.session_state.questions[st.session_state.idx]))
-            # st.write(rn())
-
+            # st.write(rn(),1)
+            # st.write(rn(),2)
+        elif not st.session_state.first_question_player:
+            with question_audio_placeholder.container():
+                st.write(question_audio(st.session_state.questions[st.session_state.idx]))
+            st.session_state.first_question_player = True
 
     if not submit_btn_state:
-        st.success("That's it, please share your feedback above. To attempted a new QB just select and different QB from QB dropdown. and to reattempt, refresh the page.")
+        st.success("That's it, click submit below to submit your practice. You can continue practicing with a new question set simply by refreshing this page.")
         if st.button("Submit",disabled=submit_btn_state):
             st.session_state.submit_pressed = True
             id = rn()
@@ -360,3 +367,7 @@ if st.session_state.Start:
         # st.write(st.session_state.answers)
     else:
         reset()
+
+# if 'idx' in st.session_state:
+#     if st.session_state.idx < (len(st.session_state.questions)-1):
+#         st.session_state.idx+=1
