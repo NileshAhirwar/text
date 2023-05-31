@@ -19,8 +19,16 @@ from audio_recorder_streamlit import audio_recorder
 from gtts import gTTS
 from IPython.display import Audio
 import base64
-
+import assemblyai as aai
 from email_validator import validate_email, EmailNotValidError
+
+def transcribe():
+    a = '8cdbf17923c848'
+    b = 'e0ad5b22fc9ad7ceec'
+    aai.settings.api_key = a+b
+    transcriber = aai.Transcriber()
+    transcript = transcriber.transcribe("temp_audio.wav")
+    return transcript.text
 
 def vallid_email(email):
     try:
@@ -239,9 +247,9 @@ st.divider()
 if st.session_state.Start:
     info_placeholder = st.empty()
     q_placeholder = st.empty()
+    question_audio_placeholder = st.empty()
     a_placeholder = st.empty()
     speak_placeholder = st.empty()
-    question_audio_placeholder = st.empty()
     if 'idx' not in st.session_state:
         st.session_state.idx = 0
 
@@ -276,14 +284,16 @@ if st.session_state.Start:
         with open(audio_file_path, "wb") as f:
             f.write(st.session_state.audio_data)
         
-        st.audio(audio_file_path, format="audio/wav")
-        r = sr.Recognizer()
-        with sr.AudioFile(audio_file_path) as source:
-            audio = r.record(source)
-            try:
-                transcription = r.recognize_google(audio)
-            except sr.UnknownValueError:
-                transcription = "Unable to transcribe audio."
+        transcription = transcribe()
+        
+        # st.audio(audio_file_path, format="audio/wav")
+        # r = sr.Recognizer()
+        # with sr.AudioFile(audio_file_path) as source:
+        #     audio = r.record(source)
+        #     try:
+        #         transcription = r.recognize_google(audio)
+        #     except sr.UnknownValueError:
+        #         transcription = "Unable to transcribe audio."
         st.write(transcription)
         # if st.session_state.idx < len(st.session_state.questions):
         ele = st.session_state.questions[st.session_state.idx]
