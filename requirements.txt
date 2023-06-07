@@ -14,3 +14,4 @@ pyautogui
 gtts
 email-validator
 assemblyai
+pandas
